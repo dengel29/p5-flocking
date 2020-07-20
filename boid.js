@@ -1,13 +1,21 @@
 class Boid {
-  constructor() {
-    this.position = createVector(random(width), random(height));
-    this.velocity = p5.Vector.random2D();
-    this.velocity.setMag(random(2, 4));
+  constructor(posX = random(width), posY = random(height)) {
+    this.position = createVector(posX, posY);
+    this.velocity = createVector(0, 0);
+    this.velocity.setMag(random(2, 0));
     this.acceleration = createVector();
-    this.maxForce = 0.2;
-    this.maxSpeed = 4;
+    this.maxForce = 0.05;
+    this.maxSpeed = 3;
+    this.test = false;
+    this.rotation = random(6.0);
   }
 
+  // get separation() {
+  //   return this.separation
+  // }
+  // set test(b) {
+  //   this.test = b
+  // }
   edges() {
     if (this.position.x > width) {
       this.position.x = 0;
@@ -20,7 +28,14 @@ class Boid {
       this.position.y = height
     }
   }
-  flock(boids) {
+
+  patternize(boids) {
+    // let boi = boids.find(b => b.test)
+    // if (boi) {
+    //   // console.log("acceleration", boi.acceleration)
+    // }
+
+
     let cohesion = this.cohesion(boids)
     let alignment = this.align(boids);
     let separation = this.separation(boids);
@@ -31,6 +46,21 @@ class Boid {
     this.acceleration.add(separation)
     this.acceleration.add(cohesion);
     this.acceleration.add(alignment)
+
+  }
+
+  scare(boids) {
+    this.acceleration.add(this.separation(boids).mult(50))
+    this.alignment.mult(0)
+    this.cohesion.mult(0)
+    this.acceleration.add(separation)
+    console.log("scared")
+  }
+
+  reset(boids) {
+    let separation = this.separation(boids)
+    separation.sub(50)
+    this.acceleration.sub(separation)
   }
 
   align(boids) {
@@ -38,6 +68,7 @@ class Boid {
     let steeringForce = createVector();
     let total = 0;
     for (let other of boids) {
+      // rotate(this.position.angleBetween(other.position))
       let d = dist(
         this.position.x,
         this.position.y,
@@ -48,6 +79,15 @@ class Boid {
         steeringForce.add(other.velocity)
         total++
       }
+
+
+      // let v = p5.Vector.fromAngle(this.acceleration.angleBetween(other.acceleration), 30)
+      // let vx = v.x;
+      // let vy = v.y;
+      // line(0, 0, 30, 0);
+      // stroke(2);
+      // line(0, 0, vx, vy);
+
     }
     if (total > 0) {
       steeringForce.div(total)
@@ -57,6 +97,8 @@ class Boid {
     }
     return steeringForce;
   }
+
+
 
   cohesion(boids) {
     let perceptionRadius = 50
@@ -69,6 +111,9 @@ class Boid {
         other.position.x,
         other.position.y
       );
+      if (this.position.angleBetween(other.position) < -90 || this.position.angleBetween(other.position) > 90) {
+        return steeringForce
+      }
       if (d < perceptionRadius && other != this) {
         steeringForce.add(other.position)
         total++
@@ -95,7 +140,11 @@ class Boid {
         other.position.x,
         other.position.y
       );
+      if (this.position.angleBetween(other.position) < -90 || this.position.angleBetween(other.position) > 90) {
+        return steeringForce
+      }
       if (d < perceptionRadius && other != this) {
+
         let diff = p5.Vector.sub(this.position, other.position)
         diff.div(d)
         steeringForce.add(diff)
@@ -108,18 +157,30 @@ class Boid {
       steeringForce.sub(this.velocity)
       steeringForce.limit(this.maxForce)
     }
+    // this.separation = steeringForce
     return steeringForce;
   }
 
   update() {
+
     this.position.add(this.velocity)
+
     this.velocity.add(this.acceleration)
     this.velocity.limit(this.maxSpeed)
-    this.acceleration.set(0, 0)
+    this.acceleration.mult(0)
   }
   show() {
-    strokeWeight(8);
-    stroke(255);
-    point(this.position.x, this.position.y)
+    let theta = this.velocity.heading() + radians(90);
+    fill(127);
+    stroke(200);
+    push();
+    translate(this.position.x, this.position.y);
+    rotate(theta);
+    beginShape();
+    vertex(0, -this.rotation * 2);
+    vertex(-this.rotation, this.rotation * 2);
+    vertex(this.rotation, this.rotation * 2);
+    endShape(CLOSE);
+    pop();
   }
 }
