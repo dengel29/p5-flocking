@@ -1,21 +1,16 @@
 class Boid {
   constructor(posX = random(width), posY = random(height)) {
     this.position = createVector(posX, posY);
-    this.velocity = createVector(0, 0);
+    this.velocity = createVector(4, 10);
     this.velocity.setMag(random(2, 0));
     this.acceleration = createVector();
-    this.maxForce = 0.05;
+    this.maxForce = 0.03;
     this.maxSpeed = 3;
     this.test = false;
-    this.rotation = random(6.0);
+    this.rotation = random(2, 5);
+    this.maxFleeForce = 3.0;
   }
 
-  // get separation() {
-  //   return this.separation
-  // }
-  // set test(b) {
-  //   this.test = b
-  // }
   edges() {
     if (this.position.x > width) {
       this.position.x = 0;
@@ -29,25 +24,23 @@ class Boid {
     }
   }
 
-  patternize(boids) {
-    // let boi = boids.find(b => b.test)
-    // if (boi) {
-    //   // console.log("acceleration", boi.acceleration)
-    // }
-
-
+  patternize(boids, predator = null) {
     let cohesion = this.cohesion(boids)
     let alignment = this.align(boids);
     let separation = this.separation(boids);
+    if (predator) {
+      let flee = this.flee(predator)
 
+      this.acceleration.add(flee)
+    }
     separation.mult(separationSlider.value())
     cohesion.mult(cohesionSlider.value())
     alignment.mult(alignmentSlider.value())
     this.acceleration.add(separation)
     this.acceleration.add(cohesion);
     this.acceleration.add(alignment)
-
   }
+
 
   scare(boids) {
     this.acceleration.add(this.separation(boids).mult(50))
@@ -157,14 +150,41 @@ class Boid {
       steeringForce.sub(this.velocity)
       steeringForce.limit(this.maxForce)
     }
+    return steeringForce;
+  }
+
+  flee(predator) {
+    let perceptionRadius = 50
+    let steeringForce = createVector();
+    let total = 0;
+    let d = dist(
+      this.position.x,
+      this.position.y,
+      predator.position.x,
+      predator.position.y
+    );
+
+    if (d > perceptionRadius) {
+      return
+    } else {
+      let diff = p5.Vector.sub(this.position, predator.position)
+      diff.div(d)
+      steeringForce.add(diff)
+      total++
+    }
+
+    if (total > 0) {
+      steeringForce.div(total)
+      steeringForce.setMag(this.maxSpeed)
+      steeringForce.sub(this.velocity)
+      steeringForce.limit(this.maxFleeForce)
+    }
     // this.separation = steeringForce
     return steeringForce;
   }
 
   update() {
-
     this.position.add(this.velocity)
-
     this.velocity.add(this.acceleration)
     this.velocity.limit(this.maxSpeed)
     this.acceleration.mult(0)

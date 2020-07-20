@@ -12,7 +12,7 @@ function setup() {
   alignmentSlider = createSlider(0, 5, 1, 0.1);
   cohesionSlider = createSlider(0, 5, 1, 0.1);
   separationSlider = createSlider(0, 5, 1, 0.1);
-  for (i = 0; i < 10; i++) {
+  for (i = 0; i < 75; i++) {
     flock.push(new Boid())
   }
 
@@ -41,13 +41,14 @@ function draw() {
   background(d)
   for (let boid of flock) {
     boid.edges()
-    boid.patternize(flock)
+    if (predator) {
+      predator.update(x, y);
+      predator.show(x, y);
+      boid.patternize(flock, predator)
+    } else {
+      boid.patternize(flock)
+    }
     boid.update()
     boid.show()
   }
-  if (predator) {
-    predator.update(x, y);
-    predator.show(x, y)
-  }
-
 }
